@@ -1,0 +1,64 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: my-postgres-user
+      POSTGRES_PASSWORD: my-postgres-password
+
+  keycloak:
+    image: jboss/keycloak
+    ports:
+      - "8080:8080"
+    environment:
+      DB_VENDOR: postgres
+      DB_ADDR: postgres
+      DB_PORT: 5432
+      DB_DATABASE: keycloak
+      DB_USER: my-postgres-user
+      DB_PASSWORD: my-postgres-password
+      KEYCLOAK_USER: my-keycloak-user
+      KEYCLOAK_PASSWORD: my-keycloak-password
+    depends_on:
+      - postgres
+
+  mongo:
+    image: mongo
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: my-mongo-username
+      MONGO_INITDB_ROOT_PASSWORD: my-mongo-password
+
+  graphql:
+    build:
+      context: https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/MarcBad98/mycollege-graphql.git#main
+    ports:
+      - "8081:5000"
+    env_file:
+      - ./.env
+    environment:
+      MONGO_SERVICE_HOST: mongo
+      MONGO_SERVICE_PORT: 27017
+      MONGODB_USERNAME: my-mongo-username
+      MONGODB_PASSWORD: my-mongo-password
+    depends_on:
+      - mongo
+
+  vue:
+    build:
+      context: https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/MarcBad98/mycollege-vue.git#main
+    ports:
+      - "8082:8080"
+    env_file:
+      - ./.env
+    depends_on:
+      - graphql
+
+volumes:
+  postgres_data:
+  mongo_data:
